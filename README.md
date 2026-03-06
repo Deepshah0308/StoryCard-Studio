@@ -104,24 +104,23 @@ Once complete, your console will output a stable `Service URL`.
 
 ### 2. Frontend Deployment
 
-Update your `.env` reference in your React frontend (such as `.env.production`) to point to your new Cloud Run public backend URL.
-```env
-VITE_API_BASE=https://storycard-api-xxxxx-uc.a.run.app
-```
+Inside the `frontend/` directory, update `VITE_API_BASE` in `.env.production` to your Backend URL, then deploy:
 
-Then build it securely and host it freely using platforms like **Vercel** or Firebase Hosting:
 ```bash
 cd frontend
-npm run build
+gcloud run deploy storycard-web \
+  --source . \
+  --region us-central1 \
+  --allow-unauthenticated
 ```
 
 ---
 
 ## 🏅 Hackathon Submission Verification
-- [x] **Working App**: Deploys securely with Image and Text Generation verified.
-- [x] **Public GitHub Repo**: Submitted
-- [x] **README**: Fully composed with local testing constraints AND standard deployment workflows. 
-- [x] **Architecture Diagram**: Linked clearly to illustrate the Cloud Run / Vertex AI topology flow.
-- [ ] **Proof of GCP Deployment**: (Record console inside Demo/Submit links in documentation wrapper.)
-- [ ] **Demo Video**: Upload to YouTube / Vimeo <= 4 minutes.
-- [ ] **Devpost submission**: Completed.
+- [x] **Working App**: Verified end-to-end Local and Containerized capabilities.
+- [x] **Public GitHub Repo**: [Link to your repo]
+- [x] **README**: Comprehensive local spin-up + Cloud Run deployment guide.
+- [x] **Architecture Diagram**: Mermaid-powered schematic in [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+- [ ] **Proof of GCP Deployment**: (Ready for Cloud Run console screenshots/recording)
+- [ ] **Demo Video**: Uploaded to YouTube (English, <4 mins)
+- [ ] **Devpost submission**: Fully populated.
