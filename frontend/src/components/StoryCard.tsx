@@ -1,7 +1,6 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { ExternalLink, Download } from 'lucide-react';
-import { StoryCard as StoryCardType } from '../types';
+import type { StoryCard as StoryCardType } from '../types';
 
 interface StoryCardProps {
     card: StoryCardType;
@@ -22,7 +21,6 @@ export function StoryCard({ card, index }: StoryCardProps) {
                     src={card.image_url}
                     alt={card.title}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    crossOrigin="anonymous" // Helpful for saving if on same domain, but here they are GCS URLs
                 />
 
                 {/* Hover Actions */}
