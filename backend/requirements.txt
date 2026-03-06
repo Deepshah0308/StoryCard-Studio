@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+google-generativeai
+google-cloud-aiplatform
+google-cloud-storage
+google-cloud-secret-manager
+pydantic
+python-dotenv
+pillow
