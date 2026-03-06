@@ -4,7 +4,7 @@ import { Sparkles, Clapperboard, AlertCircle } from 'lucide-react';
 import { StoryForm } from './components/StoryForm';
 import { StoryCarousel } from './components/StoryCarousel';
 import { generateStory } from './api';
-import { StoryCardRequest, StoryResponse } from './types';
+import type { StoryCardRequest, StoryResponse } from './types';
 
 function App() {
   const [isLoading, setIsLoading] = useState(false);

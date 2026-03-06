@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Wand2 } from 'lucide-react';
-import { StoryCardRequest } from '../types';
+import type { StoryCardRequest } from '../types';
 
 interface StoryFormProps {
     onGenerate: (request: StoryCardRequest) => void;

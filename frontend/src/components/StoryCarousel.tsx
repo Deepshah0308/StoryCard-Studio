@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { StoryResponse } from '../types';
+import { useRef } from 'react';
+import { motion } from 'framer-motion';
+import type { StoryResponse } from '../types';
 import { StoryCard } from './StoryCard';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 

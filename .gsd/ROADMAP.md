@@ -27,7 +27,7 @@
 **Objective**: Connect Frontend to Backend and verify full generation flow locally.
 **Requirements**: FR-01, FR-02, FR-03, FR-04, FR-05, FR-06, FR-07, FR-08, FR-09, FR-10
 
-### Phase 4: Production Readiness & Cloud Deployment
+### Phase 4: Production Readiness, Deployment & Hackathon Requirements
 **Status**: ⬜ Not Started
-**Objective**: Finalize Dockerfile, Cloud Build config, and deploy to Cloud Run.
-**Requirements**: NFR-03
+**Objective**: Deploy to Cloud Run, establish Docker environment, and compose the mandatory README, architecture diagram, and GitHub repository final state to satisfy Hackathon requirements.
+**Requirements**: NFR-03, Hackathon Deliverables (README with setup, Arch Diagram, GCP deployment proofs)
