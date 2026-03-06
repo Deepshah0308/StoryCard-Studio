@@ -24,7 +24,7 @@ export function StoryCard({ card, index }: StoryCardProps) {
                 />
 
                 {/* Hover Actions */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4 backdrop-blur-sm">
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4">
                     <a
                         href={card.image_url}
                         target="_blank"

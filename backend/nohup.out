@@ -15,3 +15,8 @@ INFO:     127.0.0.1:58188 - "POST /api/storycards HTTP/1.1" 200 OK
 INFO:     127.0.0.1:58259 - "POST /api/storycards HTTP/1.1" 200 OK
 INFO:     127.0.0.1:58473 - "OPTIONS /api/storycards HTTP/1.1" 200 OK
 INFO:     127.0.0.1:58473 - "POST /api/storycards HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59151 - "OPTIONS /api/storycards HTTP/1.1" 200 OK
+Failed to generate image: list index out of range
+Image generation error: Failed to generate image: list index out of range
+INFO:     127.0.0.1:59153 - "POST /api/storycards HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:59206 - "POST /api/storycards HTTP/1.1" 200 OK
