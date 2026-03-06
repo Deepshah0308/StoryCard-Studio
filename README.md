@@ -1,5 +1,8 @@
 # StoryCard Studio
 
+**Live App**: [https://storycard-web-94946682403.us-central1.run.app](https://storycard-web-94946682403.us-central1.run.app)
+**API Endpoint**: [https://storycard-api-94946682403.us-central1.run.app](https://storycard-api-94946682403.us-central1.run.app)
+
 Welcome to **StoryCard Studio**! This is a dynamic, GenAI-fueled web application submitted for the **Gemini Live Agent Hackathon - Creative Storyteller**.
 
 It transforms a short user idea or context into a cohesive 5-card illustrated narrative by heavily leveraging the interleaving power and structured intelligence of **Gemini 2.5 Flash** for story-boarding, and **Imagen 3.0 Fast Generate** for art direction, fully deployed on **Google Cloud Platform**.
@@ -118,9 +121,9 @@ gcloud run deploy storycard-web \
 
 ## 🏅 Hackathon Submission Verification
 - [x] **Working App**: Verified end-to-end Local and Containerized capabilities.
-- [x] **Public GitHub Repo**: [Link to your repo]
-- [x] **README**: Comprehensive local spin-up + Cloud Run deployment guide.
-- [x] **Architecture Diagram**: Mermaid-powered schematic in [`ARCHITECTURE.md`](./ARCHITECTURE.md).
-- [ ] **Proof of GCP Deployment**: (Ready for Cloud Run console screenshots/recording)
-- [ ] **Demo Video**: Uploaded to YouTube (English, <4 mins)
+- [x] **Public GitHub Repo**: Submitted.
+- [x] **README**: Fully composed with local testing constraints AND standard deployment workflows. 
+- [x] **Architecture Diagram**: Linked clearly to illustrate the Cloud Run / Vertex AI topology flow.
+- [x] **Proof of GCP Deployment**: Services live on Cloud Run.
+- [ ] **Demo Video**: Uploaded to YouTube (English, <4 mins).
 - [ ] **Devpost submission**: Fully populated.
