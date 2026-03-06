@@ -1,6 +1,7 @@
 import os
 import uuid
 import logging
+import asyncio
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -69,6 +70,10 @@ async def generate_storycards(request: StoryCardRequest):
     # Generate Images sequentially and upload to GCS
     try:
         for idx, card in enumerate(story_config.cards):
+            if idx > 0:
+                # Add delay to avoid hitting Vertex AI Quota limits (Requests Per Minute/Second)
+                await asyncio.sleep(5)
+                
             # 1. Generate image using Imagen
             image_bytes = ai_service.generate_story_image(
                 visual_prompt=card.visual_prompt,
