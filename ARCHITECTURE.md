@@ -14,7 +14,7 @@ graph TD
     User((User)):::user
     
     subgraph Client [Browser Environment]
-        UI[React/Vite Frontend\n(StoryCard Studio)]:::frontend
+        UI["React/Vite Frontend (StoryCard Studio)"]:::frontend
     end
     
     subgraph Server [Google Cloud Run]
@@ -22,12 +22,12 @@ graph TD
     end
     
     subgraph VertexAI [Google Cloud Vertex AI]
-        Gemini[Gemini 2.5 Flash\n(Narrative & Scene Generation)]:::gcp
-        Imagen[Imagen 3.0 Fast Generate\n(Image Generation)]:::gcp
+        Gemini["Gemini 2.5 Flash<br/>(Narrative & Scene Generation)"]:::gcp
+        Imagen["Imagen 3.0 Fast Generate<br/>(Image Generation)"]:::gcp
     end
     
     subgraph GCS [Google Cloud Storage]
-        Bucket[(storycard-images-prod\nBucket)]:::gcp
+        Bucket[("(storycard-images-prod Bucket)")]:::gcp
     end
     
     %% Interactions
