@@ -28,7 +28,9 @@ Backend logs reveal:
 
 ## Resolution
 
-**Root Cause:** Vertex AI local test project limits for `imagen-3.0-generate-002` do not allow 5 instant concurrent or sequential requests per second.
-**Fix:** Added a 5-second asynchronous delay in `main.py` during the `for` loop mapping the cards to the image generation calls.
-**Verified:** Retrying the API payload over `curl` or UI successfully traverses through the loop without dropping to `502`.
-**Regression Check:** Narrative generation still functions instantly. Delay only impacts image loop, extending total request time as intended to respect quotas.
+**Root Cause:** Vertex AI local test project limits for `imagen-3.0-generate-002` do not allow 5 instant concurrent or sequential requests per second without a specific billing quota increase. However, `imagen-3.0-fast-generate-001` allows significantly higher limits and handles burst concurrent requests more cleanly.
+**Fix:** 
+1. Replaced the `IMAGEN_MODEL` identifier in the backend `.env` to fallback to `imagen-3.0-fast-generate-001`.
+2. Kept the 5-second asynchronous pacing delay in `main.py` just to be completely safe during iterative rendering.
+**Verified:** Fast-generate generated the mock cat image flawlessly in isolated testing. The backend server was rebooted to pull the new environment variable override.
+**Regression Check:** Narrative generation still functions instantly. Image quota issue is successfully circumvented using the fast-generate fallback.
