@@ -4,6 +4,7 @@ import logging
 import asyncio
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.concurrency import run_in_threadpool
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -56,7 +57,10 @@ async def generate_storycards(request: StoryCardRequest):
         storage_service = get_storage_service()
         
         # Generate Narrative
-        story_config = ai_service.generate_story_narrative(
+        # ⚡ Bolt Optimization: Wrap synchronous AI service call in run_in_threadpool
+        # to prevent blocking the FastAPI event loop, improving concurrency.
+        story_config = await run_in_threadpool(
+            ai_service.generate_story_narrative,
             topic=request.topic,
             input_text=request.inputText,
             style=request.style
@@ -75,13 +79,17 @@ async def generate_storycards(request: StoryCardRequest):
                 await asyncio.sleep(5)
                 
             # 1. Generate image using Imagen
-            image_bytes = ai_service.generate_story_image(
+            # ⚡ Bolt Optimization: Wrap synchronous AI service call in run_in_threadpool
+            image_bytes = await run_in_threadpool(
+                ai_service.generate_story_image,
                 visual_prompt=card.visual_prompt,
                 style=request.style or "Default"
             )
             
             # 2. Upload to GCS
-            image_url = storage_service.upload_image(
+            # ⚡ Bolt Optimization: Wrap synchronous storage service call in run_in_threadpool
+            image_url = await run_in_threadpool(
+                storage_service.upload_image,
                 story_id=story_id,
                 index=idx,
                 image_bytes=image_bytes
@@ -108,7 +116,12 @@ async def generate_storycards(request: StoryCardRequest):
     
     # Upload metadata JSON
     try:
-        storage_service.upload_json(story_id, full_response.model_dump())
+        # ⚡ Bolt Optimization: Wrap synchronous storage service call in run_in_threadpool
+        await run_in_threadpool(
+            storage_service.upload_json,
+            story_id,
+            full_response.model_dump()
+        )
     except Exception as e:
         logger.warning(f"Failed to upload story JSON: {e}")
 
