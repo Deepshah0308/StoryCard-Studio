@@ -3,6 +3,7 @@ import uuid
 import logging
 import asyncio
 from fastapi import FastAPI, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
@@ -55,8 +56,9 @@ async def generate_storycards(request: StoryCardRequest):
         ai_service = get_ai_service()
         storage_service = get_storage_service()
         
-        # Generate Narrative
-        story_config = ai_service.generate_story_narrative(
+        # Generate Narrative (Run in threadpool to prevent blocking the async event loop)
+        story_config = await run_in_threadpool(
+            ai_service.generate_story_narrative,
             topic=request.topic,
             input_text=request.inputText,
             style=request.style
@@ -74,14 +76,16 @@ async def generate_storycards(request: StoryCardRequest):
                 # Add delay to avoid hitting Vertex AI Quota limits (Requests Per Minute/Second)
                 await asyncio.sleep(5)
                 
-            # 1. Generate image using Imagen
-            image_bytes = ai_service.generate_story_image(
+            # 1. Generate image using Imagen (Offload CPU/IO bound tasks to threadpool)
+            image_bytes = await run_in_threadpool(
+                ai_service.generate_story_image,
                 visual_prompt=card.visual_prompt,
                 style=request.style or "Default"
             )
             
-            # 2. Upload to GCS
-            image_url = storage_service.upload_image(
+            # 2. Upload to GCS (Offload IO bound task to threadpool)
+            image_url = await run_in_threadpool(
+                storage_service.upload_image,
                 story_id=story_id,
                 index=idx,
                 image_bytes=image_bytes
@@ -106,9 +110,9 @@ async def generate_storycards(request: StoryCardRequest):
         cards=response_cards
     )
     
-    # Upload metadata JSON
+    # Upload metadata JSON (Offload IO bound task to threadpool)
     try:
-        storage_service.upload_json(story_id, full_response.model_dump())
+        await run_in_threadpool(storage_service.upload_json, story_id, full_response.model_dump())
     except Exception as e:
         logger.warning(f"Failed to upload story JSON: {e}")
 
