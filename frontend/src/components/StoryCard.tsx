@@ -20,6 +20,8 @@ export function StoryCard({ card, index }: StoryCardProps) {
                 <img
                     src={card.image_url}
                     alt={card.title}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
 
