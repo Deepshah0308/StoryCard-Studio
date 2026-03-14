@@ -67,38 +67,51 @@ async def generate_storycards(request: StoryCardRequest):
         logger.error(f"Narrative generation or service init error: {e}")
         raise HTTPException(status_code=502, detail=f"Service initialization or narrative generation failed. Ensure Google Cloud auth is configured. Error: {str(e)}")
 
-    response_cards = []
+    # ⚡ Bolt Optimization: Concurrent Image Processing
+    # We still maintain the 5-second pacing delay between requests to respect Vertex AI quota limits.
+    # However, by spawning concurrent tasks, we remove the actual image generation and GCS upload times
+    # from the critical path, effectively overlapping the delay with processing time.
+    upload_tasks = []
     
-    # Generate Images sequentially and upload to GCS
+    # Generate Images and upload to GCS concurrently
     try:
         for idx, card in enumerate(story_config.cards):
             if idx > 0:
                 # Add delay to avoid hitting Vertex AI Quota limits (Requests Per Minute/Second)
                 await asyncio.sleep(5)
                 
-            # 1. Generate image using Imagen (Offload CPU/IO bound tasks to threadpool)
-            image_bytes = await run_in_threadpool(
-                ai_service.generate_story_image,
-                visual_prompt=card.visual_prompt,
-                style=request.style or "Default"
-            )
-            
-            # 2. Upload to GCS (Offload IO bound task to threadpool)
-            image_url = await run_in_threadpool(
-                storage_service.upload_image,
-                story_id=story_id,
-                index=idx,
-                image_bytes=image_bytes
-            )
-            
-            # 3. Add to response
-            response_cards.append(
-                StoryResponseCard(
-                    title=card.title,
-                    caption=card.caption,
+            async def generate_and_upload(index, card_data, style):
+                # 1. Generate image using Imagen (Offload CPU/IO bound tasks to threadpool)
+                image_bytes = await run_in_threadpool(
+                    ai_service.generate_story_image,
+                    visual_prompt=card_data.visual_prompt,
+                    style=style or "Default"
+                )
+
+                # 2. Upload to GCS (Offload IO bound task to threadpool)
+                image_url = await run_in_threadpool(
+                    storage_service.upload_image,
+                    story_id=story_id,
+                    index=index,
+                    image_bytes=image_bytes
+                )
+
+                # 3. Return the response card structure
+                return index, StoryResponseCard(
+                    title=card_data.title,
+                    caption=card_data.caption,
                     image_url=image_url
                 )
-            )
+
+            # Spawn task asynchronously so it doesn't block the next iteration's 5s sleep delay
+            task = asyncio.create_task(generate_and_upload(idx, card, request.style))
+            upload_tasks.append(task)
+
+        # Wait for all tasks to finish and sort them to maintain narrative order
+        results = await asyncio.gather(*upload_tasks)
+        results.sort(key=lambda x: x[0])
+        response_cards = [r[1] for r in results]
+
     except Exception as e:
         logger.error(f"Image generation error: {e}")
         raise HTTPException(status_code=502, detail=f"Image generation or upload failed. Please try again.")
