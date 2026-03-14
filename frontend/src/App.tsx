@@ -19,8 +19,9 @@ function App() {
     try {
       const result = await generateStory(request);
       setStory(result);
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred. Please try again.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.';
+      setError(message);
     } finally {
       setIsLoading(false);
     }
