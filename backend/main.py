@@ -45,6 +45,31 @@ def get_storage_service():
 def read_root():
     return {"status": "ok", "message": "StoryCard Studio API is running"}
 
+async def upload_and_create_card(storage_service, story_id, idx, image_bytes, card):
+    """Helper function to upload an image and return a StoryResponseCard concurrently."""
+    try:
+        image_url = await run_in_threadpool(
+            storage_service.upload_image,
+            story_id=story_id,
+            index=idx,
+            image_bytes=image_bytes
+        )
+        return StoryResponseCard(
+            title=card.title,
+            caption=card.caption,
+            image_url=image_url
+        )
+    except Exception as e:
+        logger.error(f"Failed to upload image {idx} for story {story_id}: {e}")
+        raise e
+
+async def upload_metadata_json(storage_service, story_id, data):
+    """Helper function to upload metadata JSON concurrently."""
+    try:
+        await run_in_threadpool(storage_service.upload_json, story_id, data)
+    except Exception as e:
+        logger.warning(f"Failed to upload story JSON: {e}")
+
 @app.post("/api/storycards", response_model=StoryResponse)
 async def generate_storycards(request: StoryCardRequest):
     if not request.topic:
@@ -67,9 +92,9 @@ async def generate_storycards(request: StoryCardRequest):
         logger.error(f"Narrative generation or service init error: {e}")
         raise HTTPException(status_code=502, detail=f"Service initialization or narrative generation failed. Ensure Google Cloud auth is configured. Error: {str(e)}")
 
-    response_cards = []
+    upload_tasks = []
     
-    # Generate Images sequentially and upload to GCS
+    # Generate Images sequentially and start upload tasks concurrently to overlap I/O with Vertex API calls
     try:
         for idx, card in enumerate(story_config.cards):
             if idx > 0:
@@ -77,44 +102,38 @@ async def generate_storycards(request: StoryCardRequest):
                 await asyncio.sleep(5)
                 
             # 1. Generate image using Imagen (Offload CPU/IO bound tasks to threadpool)
+            # This must remain sequential to respect rate limits
             image_bytes = await run_in_threadpool(
                 ai_service.generate_story_image,
                 visual_prompt=card.visual_prompt,
                 style=request.style or "Default"
             )
             
-            # 2. Upload to GCS (Offload IO bound task to threadpool)
-            image_url = await run_in_threadpool(
-                storage_service.upload_image,
-                story_id=story_id,
-                index=idx,
-                image_bytes=image_bytes
+            # 2. Upload to GCS and construct response card concurrently
+            # Fire off the task and don't await it here so the next iteration can proceed
+            task = asyncio.create_task(
+                upload_and_create_card(storage_service, story_id, idx, image_bytes, card)
             )
+            upload_tasks.append(task)
             
-            # 3. Add to response
-            response_cards.append(
-                StoryResponseCard(
-                    title=card.title,
-                    caption=card.caption,
-                    image_url=image_url
-                )
-            )
+        # Wait for all background upload tasks to complete
+        response_cards = await asyncio.gather(*upload_tasks)
+
     except Exception as e:
-        logger.error(f"Image generation error: {e}")
+        logger.error(f"Image generation or upload error: {e}")
         raise HTTPException(status_code=502, detail=f"Image generation or upload failed. Please try again.")
 
     # Construct the final response
     full_response = StoryResponse(
         story_id=story_id,
         summary=story_config.summary,
-        cards=response_cards
+        cards=list(response_cards)
     )
     
-    # Upload metadata JSON (Offload IO bound task to threadpool)
-    try:
-        await run_in_threadpool(storage_service.upload_json, story_id, full_response.model_dump())
-    except Exception as e:
-        logger.warning(f"Failed to upload story JSON: {e}")
+    # Upload metadata JSON in background (Fire and forget, don't await)
+    asyncio.create_task(
+        upload_metadata_json(storage_service, story_id, full_response.model_dump())
+    )
 
     return full_response
 
