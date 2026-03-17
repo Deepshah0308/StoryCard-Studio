@@ -125,5 +125,5 @@ gcloud run deploy storycard-web \
 - [x] **README**: Fully composed with local testing constraints AND standard deployment workflows. 
 - [x] **Architecture Diagram**: Linked clearly to illustrate the Cloud Run / Vertex AI topology flow.
 - [x] **Proof of GCP Deployment**: Services live on Cloud Run.
-- [ ] **Demo Video**: Uploaded to YouTube (English, <4 mins).
-- [ ] **Devpost submission**: Fully populated.
+- [x] **Demo Video**: Uploaded to YouTube (English, <4 mins).
+- [x] **Devpost submission**: Fully populated.
