@@ -68,6 +68,7 @@ async def generate_storycards(request: StoryCardRequest):
         raise HTTPException(status_code=502, detail=f"Service initialization or narrative generation failed. Ensure Google Cloud auth is configured. Error: {str(e)}")
 
     response_cards = []
+    upload_tasks = []
     
     # Generate Images sequentially and upload to GCS
     try:
@@ -83,15 +84,24 @@ async def generate_storycards(request: StoryCardRequest):
                 style=request.style or "Default"
             )
             
-            # 2. Upload to GCS (Offload IO bound task to threadpool)
-            image_url = await run_in_threadpool(
-                storage_service.upload_image,
-                story_id=story_id,
-                index=idx,
-                image_bytes=image_bytes
+            # 2. Upload to GCS concurrently
+            # ⚡ Bolt: Use asyncio.create_task to overlap GCS uploads with the intentional Vertex AI
+            # quota delays (asyncio.sleep). This improves total response time by not blocking the loop.
+            upload_task = asyncio.create_task(
+                run_in_threadpool(
+                    storage_service.upload_image,
+                    story_id=story_id,
+                    index=idx,
+                    image_bytes=image_bytes
+                )
             )
             
-            # 3. Add to response
+            # 3. Store the task and card info to build the response later
+            upload_tasks.append((upload_task, card))
+
+        # Await all background uploads
+        for upload_task, card in upload_tasks:
+            image_url = await upload_task
             response_cards.append(
                 StoryResponseCard(
                     title=card.title,
