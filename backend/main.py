@@ -2,7 +2,7 @@ import os
 import uuid
 import logging
 import asyncio
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -46,7 +46,7 @@ def read_root():
     return {"status": "ok", "message": "StoryCard Studio API is running"}
 
 @app.post("/api/storycards", response_model=StoryResponse)
-async def generate_storycards(request: StoryCardRequest):
+async def generate_storycards(request: StoryCardRequest, background_tasks: BackgroundTasks):
     if not request.topic:
         raise HTTPException(status_code=400, detail="Topic is required")
 
@@ -68,6 +68,11 @@ async def generate_storycards(request: StoryCardRequest):
         raise HTTPException(status_code=502, detail=f"Service initialization or narrative generation failed. Ensure Google Cloud auth is configured. Error: {str(e)}")
 
     response_cards = []
+    upload_tasks = []
+
+    # Helper to wrap sync upload
+    def _upload_image_sync(idx, image_bytes):
+        return storage_service.upload_image(story_id=story_id, index=idx, image_bytes=image_bytes)
     
     # Generate Images sequentially and upload to GCS
     try:
@@ -83,15 +88,13 @@ async def generate_storycards(request: StoryCardRequest):
                 style=request.style or "Default"
             )
             
-            # 2. Upload to GCS (Offload IO bound task to threadpool)
-            image_url = await run_in_threadpool(
-                storage_service.upload_image,
-                story_id=story_id,
-                index=idx,
-                image_bytes=image_bytes
-            )
+            # 2. Upload to GCS asynchronously without blocking the loop
+            task = asyncio.create_task(run_in_threadpool(_upload_image_sync, idx, image_bytes))
+            upload_tasks.append((idx, card, task))
             
-            # 3. Add to response
+        # 3. Await all uploads and build response
+        for idx, card, task in upload_tasks:
+            image_url = await task
             response_cards.append(
                 StoryResponseCard(
                     title=card.title,
@@ -99,6 +102,7 @@ async def generate_storycards(request: StoryCardRequest):
                     image_url=image_url
                 )
             )
+
     except Exception as e:
         logger.error(f"Image generation error: {e}")
         raise HTTPException(status_code=502, detail=f"Image generation or upload failed. Please try again.")
@@ -110,11 +114,15 @@ async def generate_storycards(request: StoryCardRequest):
         cards=response_cards
     )
     
-    # Upload metadata JSON (Offload IO bound task to threadpool)
-    try:
-        await run_in_threadpool(storage_service.upload_json, story_id, full_response.model_dump())
-    except Exception as e:
-        logger.warning(f"Failed to upload story JSON: {e}")
+    # ⚡ Bolt: Offload JSON metadata upload to BackgroundTasks
+    # so the API responds immediately without waiting for this final I/O
+    def _upload_json_sync():
+        try:
+            storage_service.upload_json(story_id, full_response.model_dump())
+        except Exception as e:
+            logger.warning(f"Failed to upload story JSON: {e}")
+
+    background_tasks.add_task(run_in_threadpool, _upload_json_sync)
 
     return full_response
 
